@@ -6,6 +6,8 @@ print(df)
 
 prob = pulp.LpProblem("myProblem", pulp.LpMinimize)
 
+#sdfasd fasd f
+
 
 # Minimize totalCost subject to
 # totalPurchased = totalDemand
