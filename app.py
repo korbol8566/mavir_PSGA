@@ -1,59 +1,45 @@
-# import pandas to handle xls import
-#import pandas as pd
+from pulp import *  # import pulp to do LP stuff on imported xls
 
-# import pulp to do LP stuff on imported xls
-import pulp as pl
+# create the list of vendors
+Vendors = ["1", "2", "3"]
 
-# import supply.xls from current directory into a pandas dataframe
-from pulp import LpInteger
+# A dictionary of the costs of each of the Vendors is created
+costs = {1: 95, 2: 110, 3: 120}
 
-#df = pd.read_excel("supply.xlsx")
-#print(df)
+# A dictionary of the volumes of each of the Vendors is created
+volumes = {1: 12, 2: 34, 3: 24}
 
-# target problem: buy 50 units for the lowest price possible
-prob = pl.LpProblem("Test problem to see if this could even work", pl.LpMinimize)
+# Create the 'prob' variable to contain the problem data
+prob = LpProblem("Test problem with dict inputs", LpMinimize)
 
-# Create the necessary vars, in this case the 3 sellers
-# args: pl.LpVariable("arbitrary name", lower bound, upper bound, type)
+# A dictionary called 'vendor_vars' is created to contain the referenced Variables
+vendor_vars = LpVariable.dict("Vend", Vendors, 0)
 
-x1 = pl.LpVariable("seller1", 0, 12, LpInteger)
-x2 = pl.LpVariable("seller2", 0, 34, LpInteger)
-x3 = pl.LpVariable("seller3", 0, 24, LpInteger)
+# The objective function is added to 'prob' first
+prob += (
+    lpSum([costs[i] * vendor_vars[i] for i in Vendors]),
+    "Total cost to satisfy demand",
+)
 
-# create prob as problem data datatype to store functions, constraints and other necessary stuff
-# and a custom string to explain the target function
-
-prob += 95 * x1 + 110 * x2 + 120 * x3, "Total cost to satisfy current demand"
-
-# demand will be a user input data among others, when I get to it eventually
-# but who knows in today's godforsaken economy for crying out loud
-
-# demand = ???
-
-# adding necessary constraints to prob
-
-# 50 is an arbitrary value, must be replaced with a variable
-prob += x1 + x2 + x3 == 50
-prob += x1 <= 12
-prob += x2 <= 34
-prob += x3 <= 24
-
-# The problem data is written to an .lp file
-prob.writeLP("sellers.lp")
+# The four constraints are added to 'prob'
+prob += lpSum([vendor_vars[i] for i in Vendors]) == 50, "DemandSum"
+prob += (
+    lpSum([volumes[i] for i in Vendors]) <= volumes[],
+    "VolumeConstraint",
+)
+# prob += x1 <= sellers[0, 'volume']
+# prob += x2 <= sellers[1, 'volume']
+# prob += x3 <= sellers[2, 'volume']
 
 # The problem is solved using PuLP's choice of Solver
 prob.solve()
 
 # The status of the solution is printed to the screen
-print("Status:", pl.LpStatus[prob.status])
+print("Status:", LpStatus[prob.status])
 
 # Each of the variables is printed with it's resolved optimum value
 for v in prob.variables():
     print(v.name, "=", v.varValue)
 
 # The optimised objective function value is printed to the screen
-print("Total cost to satisfy current demand = ", pl.value(prob.objective))
-
-# Minimize totalCost subject to
-# totalPurchased = totalDemand
-# purchaseCost <= sumDemandValue
+print("Total cost to satisfy demand: ", value(prob.objective))
