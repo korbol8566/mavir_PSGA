@@ -1,79 +1,50 @@
-# mavir optimization MVP, fill-or-kill mfrr setting
-
+# mavir optimization MVP, fill-or-kill mfrr setting, xls import
+import pandas as pd
 from pulp import *
 
-afrrVendors = ["afrr1",
-               "afrr2",
-               "afrr3",
-               "afrr4",
-               "afrr5",
-               "afrr6",
-               "afrr7",
-               "afrr8"]
+# xls data is read into pandas dataframes and sorted into list, which are then fed into the algorithm!
+# I'm thinking of the delicious blood sausage I'm going to have for lunch.
+# I'm thinking german mustard should go along nicely with it! Yum yum!
 
-mfrrVendors = ["mfrr1",
-               "mfrr1",
-               "mfrr2",
-               "mfrr3",
-               "mfrr4",
-               "mfrr5",
-               "mfrr6",
-               "mfrr7",
-               "mfrr8",
-               "mfrr9",
-               "mfrr10",
-               "mfrr11",
-               "mfrr12",
-               "mfrr13"]
+# a pandas dataframe is used to store xls data
 
-# A dictionary of the costs of each of the Vendors is created
+demand_df = pd.read_excel('supply.xlsx', sheet_name='IB')
+df = pd.read_excel('supply.xlsx', sheet_name='00')
 
-afrrVendorCosts = {"afrr1": 100000,
-                   "afrr2": 122322,
-                   "afrr3": 218978,
-                   "afrr4": 254652,
-                   "afrr5": 257130,
-                   "afrr6": 260000,
-                   "afrr7": 260000,
-                   "afrr8": 260000}
+# target demand is read into a pandas dataframe
 
-mfrrVendorCosts = {"mfrr1": 145000,
-                   "mfrr2": 157000,
-                   "mfrr3": 159000,
-                   "mfrr4": 160000,
-                   "mfrr5": 161997,
-                   "mfrr6": 161998,
-                   "mfrr7": 161999,
-                   "mfrr8": 162000,
-                   "mfrr9": 162000,
-                   "mfrr10": 162000,
-                   "mfrr11": 162000,
-                   "mfrr12": 162000,
-                   "mfrr13": 162000}
+targetDemand_with_nan = demand_df['SZUMMA'].tolist()
+targetDemand = [x for x in targetDemand_with_nan if str(x) != 'nan']
 
+# vendor names are parsed out from df while handling autofilled nan values
 
-afrrVendorVolumes = {"afrr1": 24,
-                     "afrr2": 90,
-                     "afrr3": 50,
-                     "afrr4": 33,
-                     "afrr5": 35,
-                     "afrr6": 5,
-                     "afrr7": 5,
-                     "afrr8": 25}
+afrrVendors_with_nan = df['afrrPiac'].tolist()
+afrrVendors = [x for x in afrrVendors_with_nan if str(x) != 'nan']
 
-mfrrVendorVolumes = {"mfrr1": 25,
-                     "mfrr2": 28,
-                     "mfrr3": 171,
-                     "mfrr4": 153,
-                     "mfrr5": 155,
-                     "mfrr6": 57,
-                     "mfrr7": 57,
-                     "mfrr8": 120,
-                     "mfrr9": 10,
-                     "mfrr10": 11,
-                     "mfrr11": 31,
-                     "mfrr12": 32,
-                     "mfrr13": 162}
+mfrrVendors_with_nan = df['mfrrPiac'].tolist()
+mfrrVendors = [x for x in mfrrVendors_with_nan if str(x) != 'nan']
+
+# A dictionary of the costs of each of the Vendors is generated
+
+afrrVendorCostsList_with_nan = df['afrrCost'].tolist()
+afrrVendorCostsList = [x for x in afrrVendorCostsList_with_nan if str(x) != 'nan']
+
+mfrrVendorCostsList_with_nan = df['mfrrCost'].tolist()
+mfrrVendorCostsList = [x for x in mfrrVendorCostsList_with_nan if str(x) != 'nan']
+
+afrrVendorCosts = dict(zip(afrrVendors, afrrVendorCostsList))
+mfrrVendorCosts = dict(zip(mfrrVendors, mfrrVendorCostsList))
+
+# A dictionary of the volumes of each of the Vendors is generated
+
+afrrVendorVolumeList_with_nan = df['afrrVolume'].tolist()
+afrrVendorVolumeList = [x for x in afrrVendorVolumeList_with_nan if str(x) != 'nan']
+
+mfrrVendorVolumeList_with_nan = df['mfrrVolume'].tolist()
+mfrrVendorVolumeList = [x for x in mfrrVendorVolumeList_with_nan if str(x) != 'nan']
+
+afrrVendorVolumes = dict(zip(afrrVendors, afrrVendorVolumeList))
+mfrrVendorVolumes = dict(zip(mfrrVendors, mfrrVendorVolumeList))
 
 # Create the 'prob' variable to contain the problem data
 prob = LpProblem("The MAVIR MVP Optimization Problem", LpMinimize)
@@ -89,7 +60,7 @@ prob += (
     "Optimal Cost to Fill Supply",
 )
 # The  constraints are added to 'prob'
-prob += (lpSum(afrrVendorVars[i] for i in afrrVendors) + lpSum(mfrrVendorVars[i] for i in mfrrVendors)) == 125.427, "Demand"
+prob += (lpSum(afrrVendorVars[i] for i in afrrVendors) + lpSum(mfrrVendorVars[i] for i in mfrrVendors)) == targetDemand[0], "Demand"
 
 for i in afrrVendors:
     prob += afrrVendorVars[i] <= afrrVendorVolumes[i]

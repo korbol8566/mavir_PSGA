@@ -6,15 +6,9 @@ Export data into xls
 
 Import target function and vars from xls
 
-Implement mFRR resource prioritization
-    dual target function (p parameter method)
 
 Iterate through data quarter-hourly first in an hour, then in a day
 
-Embed simplex into if clause:
-    - with mfRR prioritization
-    - standard mfRR/afRR simplex
-        whichever is cheaper, goes
-
 deadline: dec 31
 
+Az xls input legyen kerekített érték
