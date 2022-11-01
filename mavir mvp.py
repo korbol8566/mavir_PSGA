@@ -102,7 +102,7 @@ for v in prob.variables():
             output_dict["Optimális eredmény?"].append(LpStatus[prob.status])
             output_dict["Piac"].append(v.name)
             output_dict["Felhasznált volumen"].append(v.varValue)
-            # output_dict['Ár'].append()  # todo: ide az kéne, hogy mennyibe került az egyes erőműből
+            output_dict['Ár'].append('PLACEHOLDER')  # todo: ide az kéne, hogy mennyibe került az egyes erőműből
             # cost*volume
             # todo: fura az output formázás, UTF 8 legyen
 
@@ -110,10 +110,7 @@ for v in prob.variables():
 # todo: bele lehetne tenni a névbe, hogy melyik ciklusig ment el (melyik dátumtól meddig)
 
 print(json.dumps(output_dict, indent=2))
-with open('MAVIR_PSGA_simplex_output_{}.csv'.format(pd.datetime.today().strftime('%Y%m%d-%H%M%S')), 'w') as output:
-    writer = csv.writer(output)
-    for key, value in output_dict.items():
-        writer.writerow([key, value])
+output_df = pd.DataFrame(output_dict).to_excel('MAVIR_PSGA_simplex_output_{}.xlsx'.format(pd.datetime.today().strftime('%Y%m%d-%H%M%S')))
 
 # The optimised objective function value is printed to the screen
 # print("Current Optimal Supply Cost = ", value(prob.objective))
