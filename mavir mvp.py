@@ -1,14 +1,19 @@
-# mavir optimization MVP, fill-or-kill mfrr setting, xls import
-import pandas as pd
-from pulp import *
+# mavir optimization MVP
+# fill-or-kill mfrr setting
+# MAVIR xls import,
+# "POSITIVE SUPPLY" SCENARIO
+# todo: timestamped xls output
+
+import pandas as pd # Dataframes
+from pulp import * # Simplex
+import uuid # Unique ID in output file
+import json # pretty printing output dict
+import csv # main output
 
 # xls data is read into pandas dataframes and sorted into list, which are then fed into the algorithm!
-# I'm thinking of the delicious blood sausage I'm going to have for lunch.
-# I'm thinking german mustard should go along nicely with it! Yum yum!
-
 # a pandas dataframe is used to store xls data
 
-demand_df = pd.read_excel('supply.xlsx', sheet_name='IB')
+demand_df = pd.read_excel('supply.xlsx', sheet_name='IB')  # todo: ezt meg kell csinálni rendes directory-ra
 df = pd.read_excel('supply.xlsx', sheet_name='00')
 
 # target demand is read into a pandas dataframe
@@ -16,32 +21,32 @@ df = pd.read_excel('supply.xlsx', sheet_name='00')
 targetDemand_with_nan = demand_df['SZUMMA'].tolist()
 targetDemand = [x for x in targetDemand_with_nan if str(x) != 'nan']
 
-# vendor names are parsed out from df while handling autofilled nan values
+# vendor names are parsed out from filtered df's while handling autofilled nan values
+afrr_df = df[df['Piac / Market'] == 'aFRR / aFRR']
+afrr_ids = afrr_df.index.astype(str).tolist()
+afrr_df.insert(loc=0, column='row_id', value = afrr_ids)
+afrr_df['Piac / Market'] = afrr_df['Piac / Market'] + afrr_df['row_id']
+afrrVendors = afrr_df['Piac / Market'].tolist()
 
-afrrVendors_with_nan = df['afrrPiac'].tolist()
-afrrVendors = [x for x in afrrVendors_with_nan if str(x) != 'nan']
-
-mfrrVendors_with_nan = df['mfrrPiac'].tolist()
-mfrrVendors = [x for x in mfrrVendors_with_nan if str(x) != 'nan']
+mfrr_df = df[df['Piac / Market'] == 'mFRR es RR / mFRR and RR']
+mfrr_ids = mfrr_df.index.astype(str).tolist()
+mfrr_df.insert(loc=0, column='row_id', value = mfrr_ids)
+mfrr_df['Piac / Market'] = mfrr_df['Piac / Market'] + mfrr_df['row_id']
+mfrrVendors = mfrr_df['Piac / Market'].tolist()
 
 # A dictionary of the costs of each of the Vendors is generated
+# from the new df's filtered from the original df
 
-afrrVendorCostsList_with_nan = df['afrrCost'].tolist()
-afrrVendorCostsList = [x for x in afrrVendorCostsList_with_nan if str(x) != 'nan']
-
-mfrrVendorCostsList_with_nan = df['mfrrCost'].tolist()
-mfrrVendorCostsList = [x for x in mfrrVendorCostsList_with_nan if str(x) != 'nan']
+afrrVendorCostsList = afrr_df['Energia ar / Energy Price [HUF/MWh]'].tolist()
+mfrrVendorCostsList = mfrr_df['Energia ar / Energy Price [HUF/MWh]'].tolist()
 
 afrrVendorCosts = dict(zip(afrrVendors, afrrVendorCostsList))
 mfrrVendorCosts = dict(zip(mfrrVendors, mfrrVendorCostsList))
 
 # A dictionary of the volumes of each of the Vendors is generated
 
-afrrVendorVolumeList_with_nan = df['afrrVolume'].tolist()
-afrrVendorVolumeList = [x for x in afrrVendorVolumeList_with_nan if str(x) != 'nan']
-
-mfrrVendorVolumeList_with_nan = df['mfrrVolume'].tolist()
-mfrrVendorVolumeList = [x for x in mfrrVendorVolumeList_with_nan if str(x) != 'nan']
+afrrVendorVolumeList = afrr_df['Felajanlott mennyiseg / Offered Capacity [MW]'].tolist()
+mfrrVendorVolumeList = mfrr_df['Felajanlott mennyiseg / Offered Capacity [MW]'].tolist()
 
 afrrVendorVolumes = dict(zip(afrrVendors, afrrVendorVolumeList))
 mfrrVendorVolumes = dict(zip(mfrrVendors, mfrrVendorVolumeList))
@@ -71,14 +76,46 @@ for j in mfrrVendors:
 # The problem is solved using PuLP's choice of Solver
 prob.solve()
 
+# we initialize a dict with to-be column names to gather output data
+# (it's faster as opposed to appending to a df)
+output_dict = {"Unique ID": [],
+               "Időpont": [],
+               "Kereslet (MW)": [],
+               "Kínálat (HUF)": [],
+               "Optimális eredmény?": [],
+               "Piac": [],
+               "Felhasznált volumen": [],
+               "Ár": []}
+
 # The status of the solution is printed to the screen
 print("Status:", LpStatus[prob.status])
 
-# Each of the variables is printed with it's resolved optimum value
+# Each of the variables is printed and added to the output dict with it's resolved optimum value
 for v in prob.variables():
-    print(v.name, "=", v.varValue)
+    if v.varValue > 0:
+        if v.name[0] != 'u':
+            print(v.name, "=", v.varValue)
+            output_dict["Unique ID"].append(str(uuid.uuid4()))
+            output_dict["Időpont"].append(demand_df.at[0, 'Időpont'])  # todo: iterandus legyen
+            output_dict["Kereslet (MW)"].append(targetDemand[0])
+            output_dict["Kínálat (HUF)"].append(value(prob.objective))
+            output_dict["Optimális eredmény?"].append(LpStatus[prob.status])
+            output_dict["Piac"].append(v.name)
+            output_dict["Felhasznált volumen"].append(v.varValue)
+            # output_dict['Ár'].append()  # todo: ide az kéne, hogy mennyibe került az egyes erőműből
+            # cost*volume
+            # todo: fura az output formázás, UTF 8 legyen
+
+# the output_dict is converted into a df (due to performance reasons), with a timestamped name (format: yyyymmdd-HHMMSS)
+# todo: bele lehetne tenni a névbe, hogy melyik ciklusig ment el (melyik dátumtól meddig)
+
+print(json.dumps(output_dict, indent=2))
+with open('MAVIR_PSGA_simplex_output_{}.csv'.format(pd.datetime.today().strftime('%Y%m%d-%H%M%S')), 'w') as output:
+    writer = csv.writer(output)
+    for key, value in output_dict.items():
+        writer.writerow([key, value])
 
 # The optimised objective function value is printed to the screen
-print("Current Optimal Supply Cost = ", value(prob.objective))
+# print("Current Optimal Supply Cost = ", value(prob.objective))
 
 
