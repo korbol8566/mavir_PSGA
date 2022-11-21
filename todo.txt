@@ -1,14 +1,13 @@
-Import data from xls
-    import demand and supply data from MAVIR xls
-
-Export data into xls
-    print supply mix composition (aFRR, mFRR usage)
-
-Import target function and vars from xls
-
-
 Iterate through data quarter-hourly first in an hour, then in a day
 
 deadline: dec 31
 
 Az xls input legyen kerekített érték
+
+
+Negatív ág
+Egy éven végigmenni (+ aggregált inputxls?)
+Megszerelni az outputot
+
+Végigmenni becsült demanddal (Tomival meg kell beszélni)
+Betenni a 'talon' szcenáriót
