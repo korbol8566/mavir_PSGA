@@ -19,16 +19,34 @@
 #
 # print("Current Optimal Supply Cost = ", value(prob.objective))
 
-print("Start")
-mainCounter = 0
-subCounter = 0
-while mainCounter < 10:
-    print("Main Counter = ", mainCounter)
-    while subCounter < 4:
-        print("Sub Counter = ", subCounter)
-        subCounter += 1
-    subCounter = 0
-    mainCounter += 1
 
 
-print("End")
+# print("Start")
+# mainCounter = 0
+# subCounter = 0
+# while mainCounter < 10:
+#     print("Main Counter = ", mainCounter)
+#     while subCounter < 4:
+#         print("Sub Counter = ", subCounter)
+#         subCounter += 1
+#     subCounter = 0
+#     mainCounter += 1
+#
+#
+# print("End")
+
+# import pandas as pd
+#
+# supplyProductTime = '00:00-01:00'
+#
+# df = pd.read_csv(r'E:\Tulajdonos\Desktop\Tomasz diplomamunka\Új inputadatok\_ajánlatok\test\AnonimRiport_20210101_0.csv')
+# afrr_df = \
+#     df[(df['Piac / Market'] == 'aFRR / aFRR')
+#        & (df['Irany / Direction'] == supplyDirection)
+#        & (df['Termek / Product'] == supplyProductTime)]
+# with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+#     print(df[['Termek / Product', 'Piac / Market', 'Felajanlott mennyiseg / Offered Capacity [MW]']])
+
+x = -123
+y = -1 * x
+print(x, y)

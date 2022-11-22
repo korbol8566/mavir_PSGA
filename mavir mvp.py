@@ -19,26 +19,28 @@ df = pd.read_excel('supply.xlsx', sheet_name='00')
 
 supplyProductStartHour = 0
 supplyProductEndHour = 1
-supplyProductTime = "0{}:00-0{}:00.".format(supplyProductStartHour, supplyProductEndHour)
+supplyProductTime = "0{}:00-0{}:00".format(supplyProductStartHour, supplyProductEndHour)
 
 if supplyProductStartHour < 10 & supplyProductEndHour < 10:
-    supplyProductTime = "0{}:00-0{}:00.".format(supplyProductStartHour, supplyProductEndHour)
+    supplyProductTime = "0{}:00-0{}:00".format(supplyProductStartHour, supplyProductEndHour)
 
 if supplyProductStartHour < 10 & supplyProductEndHour >= 10:
-    supplyProductTime = "0{}:00-{}:00.".format(supplyProductStartHour, supplyProductEndHour)
+    supplyProductTime = "0{}:00-{}:00".format(supplyProductStartHour, supplyProductEndHour)
 
 if supplyProductStartHour >= 10 & supplyProductEndHour >= 10:
-    supplyProductTime = "{}:00-{}:00.".format(supplyProductStartHour, supplyProductEndHour)
+    supplyProductTime = "{}:00-{}:00".format(supplyProductStartHour, supplyProductEndHour)
 
 targetDemand_with_nan = demand_df['SZUMMA'].tolist()
 targetDemandList = [x for x in targetDemand_with_nan if str(x) != 'nan']
 targetDemand = targetDemandList[0]
+
 if targetDemand > 0:
     problemType = LpMinimize
-    supplyDirection = "Negativ / Negative"
-else:
-    problemType = LpMaximize
     supplyDirection = "Pozitiv / Positive"
+else:
+    targetDemand = targetDemand * -1
+    problemType = LpMaximize
+    supplyDirection = "Negativ / Negative"
 
 # vendor names are parsed out from filtered df's while handling autofilled nan values
 afrr_df = \
@@ -50,7 +52,6 @@ afrr_ids = afrr_df.index.astype(str).tolist()
 afrr_df.insert(loc=0, column='row_id', value=afrr_ids)
 afrr_df['Piac / Market'] = afrr_df['Piac / Market'] + afrr_df['row_id']
 afrrVendors = afrr_df['Piac / Market'].tolist()
-
 
 mfrr_df = \
     df[(df['Piac / Market'] == 'mFRR es RR / mFRR and RR')
@@ -78,6 +79,7 @@ mfrrVendorVolumeList = mfrr_df['Felajanlott mennyiseg / Offered Capacity [MW]'].
 
 afrrVendorVolumes = dict(zip(afrrVendors, afrrVendorVolumeList))
 mfrrVendorVolumes = dict(zip(mfrrVendors, mfrrVendorVolumeList))
+print(afrrVendorVolumes)
 
 # Create the 'prob' variable to contain the problem data
 prob = LpProblem("The MAVIR MVP Optimization Problem", problemType)
@@ -93,7 +95,7 @@ prob += (
     "Optimal Cost to Fill Supply",
 )
 # The  constraints are added to 'prob'
-prob += (lpSum(afrrVendorVars[i] for i in afrrVendors) + lpSum(mfrrVendorVars[i] for i in mfrrVendors)) <= targetDemand, "Demand"  # alá lövünk a dolognak, optimumban =, nem optimumban <
+prob += (lpSum(afrrVendorVars[i] for i in afrrVendors) + lpSum(mfrrVendorVars[i] for i in mfrrVendors)) == targetDemand, "Demand"  # alá lövünk a dolognak, optimumban =, nem optimumban <
 
 for i in afrrVendors:
     prob += afrrVendorVars[i] <= afrrVendorVolumes[i]
@@ -112,7 +114,8 @@ output_dict = {"Unique ID": [],
                "Kínálat (HUF)": [],
                "Optimális eredmény?": [],
                "Piac": [],
-               "Felhasznált volumen": [],
+               "Volumen": [],
+               "Maradék Volumen": [],
                "Ár": []}
 
 # The status of the solution is printed to the screen
@@ -129,16 +132,36 @@ for v in prob.variables():
             output_dict["Kínálat (HUF)"].append(value(prob.objective))
             output_dict["Optimális eredmény?"].append(LpStatus[prob.status])
             output_dict["Piac"].append(v.name)
-            output_dict["Felhasznált volumen"].append(v.varValue)
-            output_dict['Ár'].append('PLACEHOLDER')  # todo: ide az kéne, hogy mennyibe került az egyes erőműből
-            # cost*volume
-            # todo: fura az output formázás, UTF 8 legyen
+            output_dict["Volumen"].append(v.varValue)
+            if v.name[0:1] == 'a':
+                try:
+                    output_dict["Maradék Volumen"].append(
+                        afrrVendorVolumes['aFRR / aFRR{}'.format(v.name[(len(v.name)-1):])] - v.varValue)
+                    output_dict['Ár'].append(
+                        afrrVendorCosts['aFRR / aFRR{}'.format(v.name[(len(v.name)-1):])] * v.varValue)
+                except:
+                    output_dict["Maradék Volumen"].append(
+                        afrrVendorVolumes['aFRR / aFRR{}'.format(v.name[(len(v.name) - 2):])] - v.varValue)
+                    output_dict['Ár'].append(
+                        afrrVendorCosts['aFRR / aFRR{}'.format(v.name[(len(v.name) - 2):])] * v.varValue)
+            else:
+                try:
+                    output_dict["Maradék Volumen"].append(
+                        mfrrVendorVolumes['mFRR es RR / mFRR and RR{}'.format(v.name[(len(v.name) - 1):])] - v.varValue)
+                    output_dict['Ár'].append(
+                        mfrrVendorCosts['mFRR es RR / mFRR and RR{}'.format(v.name[(len(v.name) - 1):])] * v.varValue)
+                except:
+                    output_dict["Maradék Volumen"].append(
+                        mfrrVendorVolumes['mFRR es RR / mFRR and RR{}'.format(v.name[(len(v.name) - 2):])] - v.varValue)
+                    output_dict['Ár'].append(
+                        mfrrVendorCosts['mFRR es RR / mFRR and RR{}'.format(v.name[(len(v.name) - 2):])] * v.varValue)
+
+
 
 # the output_dict is converted into a df (due to performance reasons), with a timestamped name (format: yyyymmdd-HHMMSS)
-# todo: bele lehetne tenni a névbe, hogy melyik ciklusig ment el (melyik dátumtól meddig)
 
 print(json.dumps(output_dict, indent=2))
-output_df = pd.DataFrame(output_dict).to_excel('MAVIR_PSGA_simplex_output_{}.xlsx'.format(pd.datetime.today().strftime('%Y%m%d-%H%M%S')))
+# output_df = pd.DataFrame(output_dict).to_excel('MAVIR_PSGA_simplex_output_{}.xlsx'.format(pd.datetime.today().strftime('%Y%m%d-%H%M%S')))
 
 # The optimised objective function value is printed to the screen
 # print("Current Optimal Supply Cost = ", value(prob.objective))
