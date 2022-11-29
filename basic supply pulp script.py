@@ -35,8 +35,50 @@
 #
 # print("End")
 
-# import pandas as pd
+# overallCounter = 0
+# lower = 0
+# upper = 1
 #
+# while overallCounter < 101:
+#     if overallCounter % 4 == 0:
+#         if overallCounter != 0:
+#             lower += 1
+#             upper += 1
+#     if overallCounter % 96 == 0:
+#         print("New file beby!")
+#         lower = 0
+#         upper = 1
+#     print(overallCounter, lower, upper)
+#     overallCounter += 1
+
+
+# x = "2021.05.05 05:15:00 +0200"
+#
+# supplyProductStartHour = int(x[11:13])
+# supplyProductTime = "{}:00-{}:00".format(supplyProductStartHour - 1, supplyProductStartHour)
+#
+#
+# print(supplyProductTime)
+
+# 0 0 1
+# 1 0 1
+# 2 0 1
+# 3 0 1
+# 4 1 2
+# ...
+# import datetime
+#
+# date = datetime.datetime(2021,1,1)
+# date += datetime.timedelta(days=1)
+
+
+# x = 'mfrrVendor_mFRR_es_RR___mFRR_and_RR1423562345634567'
+# x_num = x[x.index("___") + 14:]
+# print(x_num)
+
+
+
+
 # supplyProductTime = '00:00-01:00'
 #
 # df = pd.read_csv(r'E:\Tulajdonos\Desktop\Tomasz diplomamunka\Új inputadatok\_ajánlatok\test\AnonimRiport_20210101_0.csv')
@@ -47,6 +89,26 @@
 # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
 #     print(df[['Termek / Product', 'Piac / Market', 'Felajanlott mennyiseg / Offered Capacity [MW]']])
 
-x = -123
-y = -1 * x
-print(x, y)
+x = "2021.01.01 00:15:00 +0100"
+aktualisDatum = x[:10]
+
+print(aktualisDatum)
+
+# import os
+#
+# directory_in_str = r'E:\Tulajdonos\Desktop\Tomasz diplomamunka\Új inputadatok\_ajánlatok\test'
+#
+# file_dict = {} # Create an empty dict
+#
+# directory = os.fsencode(directory_in_str)
+#
+# for file in os.listdir(directory):
+#     filename = os.fsdecode(file)
+#     if filename.endswith(".txt"):
+#         print(filename)
+#         continue
+#     else:
+#         continue
+
+
+

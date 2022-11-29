@@ -1,15 +1,15 @@
-import os
+# importing the required modules
 import glob
 import pandas as pd
 
-print("Printing results...")
-os.chdir("E:\Tulajdonos\Desktop\Tomasz diplomamunka\Új inputadatok\_ajánlatok")
-extension = 'csv'
-all_filenames = [i for i in glob.glob('*.{}'.format(extension))]
+# specifying the path to csv files
+path = r"E:\Tulajdonos\Desktop\Tomasz diplomamunka\Új inputadatok\_ajánlatok\proba"
 
-# combine all files in the list
-combined_csv = pd.concat([pd.read_csv(f) for f in all_filenames])
+# csv files in the path
+filenames = glob.glob(path + "/*.csv")
 
-# export to csv
-combined_csv.to_csv("combined_csv.csv", index=False, encoding='utf-8-sig')
+combined_csv = pd.concat( [ pd.read_csv(f) for f in filenames ] )
+
+# specified name.
+combined_csv.to_csv( "PROBA merged ajanlatok.csv", index=False )
 print("Done!")
